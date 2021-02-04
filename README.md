@@ -1,2 +1,2 @@
-# server-jam
+# skript-jam
 Like a game jam, but with minecraft servers...
