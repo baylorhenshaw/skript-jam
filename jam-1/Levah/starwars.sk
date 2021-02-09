@@ -1,0 +1,21 @@
+function playStarwars():
+    if size of {arcade::players::*} is 1:
+        broadcast "There is not enough players."
+    else:
+        set {-arcade::game} to "Starwars"
+        wait 1 second
+        set {_loc} to location(0, 65, 0, world("Starwars"))
+        create a full bound with ID "goal" between {_A} and {_B}
+        loop {arcade::players::*}:
+            loop all blocks in radius 8 around {_loc}:
+                if loop-block is not air:
+                    if block above loop-block is air:
+                        add loop-block to {_blocks::*}
+                        set {_tp} to random element out of {_blocks::*}
+                        teleport loop-value-1 to block above {_tp}
+                        clear inventory of loop-value-1
+                        apply potion of jump boost of tier 3 without any particles to loop-value-1 for 999 days
+                
+        wait 3 second
+        timerHolo()
+        checkSize()

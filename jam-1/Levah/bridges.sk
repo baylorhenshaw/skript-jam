@@ -1,0 +1,36 @@
+function playBridges():
+    delete {arcade::bridges::goal}
+    if size of {arcade::players::*} is 1:
+        broadcast "There is not enough players."
+    else:
+        set {-arcade::game} to "Bridges"
+        execute console command "/fwr reset Bridges"
+        wait 1 second
+        set {_loc} to location(0, 65, 0, world("Bridges"))
+        set {_A} to location(14, 71, 41, world("Bridges"))
+        set {_B} to location(-13, 93, 52, world("Bridges"))
+        create a full bound with ID "goal" between {_A} and {_B}
+        loop {arcade::players::*}:
+            loop all blocks in radius 8 around {_loc}:
+                if loop-block is not air:
+                    if block above loop-block is air:
+                        add loop-block to {_blocks::*}
+                        set {_tp} to random element out of {_blocks::*}
+                        teleport loop-value-1 to block above {_tp}
+                        clear inventory of loop-value-1
+        wait 3 second
+        timerHolo()
+        checkSize()
+    
+on bound enter:
+    if {-arcade::game} is "Bridges":
+        if {arcade::bridges::goal} is not set:
+            set {arcade::bridges::goal} to true
+            broadcast "%player% has won."
+            wait 5 seconds
+            arcadeLobby()
+            delete {arcade::bridges::goal}
+
+on drop:
+    if {-arcade::game} is "Bridges":
+        cancel event

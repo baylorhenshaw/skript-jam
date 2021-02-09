@@ -1,0 +1,281 @@
+#
+#░█████╗░██████╗░░█████╗░░█████╗░██████╗░███████╗
+#██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝
+#███████║██████╔╝██║░░╚═╝███████║██║░░██║█████╗░░
+#██╔══██║██╔══██╗██║░░██╗██╔══██║██║░░██║██╔══╝░░
+#██║░░██║██║░░██║╚█████╔╝██║░░██║██████╔╝███████╗
+#╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝╚═════╝░╚══════╝
+#
+# Author: Levah
+# For Skript Jam #1
+#
+
+#
+# GAMES
+#   Explosive Bow Battle
+#   Bridges
+#   Wizards 
+#   Starwars
+#
+
+import:
+    org.bukkit.event.player.PlayerMoveEvent
+
+options:
+    version: CODEJAM
+    #DESIGN
+    main: <##AA01DF>
+    accent: <##D3B3DD>
+    prefix: <##AA01DF>[Arcade]
+
+#STATES
+# LOBBY
+# PREGAME
+# INGAME
+
+
+
+on unload:
+	set {-arcade.loadtime} to now
+	broadcast "{@prefix} &fReloading {@accent}arcade {@version}..."
+on load:
+	if {-arcade.loadtime} is not set:
+		set {-arcade.loadtime} to now
+	wait 1 tick
+	set {_loadtime} to difference between {-arcade.loadtime} and now
+	broadcast "{@prefix} &fReload Complete! &f[{@accent}%{_loadtime}%&f]"
+
+function enableArcade(): #Turns the arcade ON.
+    delete {arcade::*}
+    set {-arcade::state} to "LOBBY"
+    delete {arcade::games::*}
+    set {-arcade::game} to "NONE"
+    add "ExplosiveBowBattle", "Bridges" and "Starwars" to {arcade::games::*}
+    set {arcade} to true
+    broadcast "{@prefix} {@accent}The arcade has been enabled!"
+    loop all players:
+        set {arcade::players::%loop-player%} to loop-player
+        teleport loop-player to {spawn}
+        set gamemode of loop-player to survival
+        clear inventory of loop-player
+    broadcast "%{arcade::players::*}%"
+
+function disableArcade(): #Turns the arcade OFF.
+    delete {-arcade::*}
+    delete {arcade::*}
+    set {arcade} to false
+    broadcast "{@prefix} {@accent}The arcade has been disabled!"
+
+function chooseGame() :: string:
+    set {_game} to random element out of {arcade::games::*}
+    remove {_game} from {arcade::games::*}
+    if size of {arcade::games::*} < 1:
+        add "ExplosiveBowBattle", "Bridges", and "Starwars" to {arcade::games::*}
+        chooseGame()
+    return {_game}
+
+function runGame():
+    set {_game} to chooseGame()
+    if {_game} is "ExplosiveBowBattle":
+        set {-arcade::game} to "ExplosiveBowBattle"
+        broadcast "&c&lExplosive Bow Battle"
+        wait 2 seconds
+        playExplosive()
+    if {_game} is "Bridges":
+        set {-arcade::game} to "Bridges"
+        broadcast "&a&lBridges"
+        wait 2 seconds
+        playBridges()
+    if {_game} is "Starwars":
+        set {-arcade::game} to "Starwars"
+        broadcast "&7&lStarwars"
+        wait 2 seconds
+        playStarwars()
+
+on PlayerMoveEvent:
+    set {_p} to event.getPlayer()
+    if {-arcade::game} is "ExplosiveBowBattle":
+        if {arcade::players::%{_p}%} is set:
+            if size of {arcade::players::*} > 1:
+                if y coordinate of {_p} is less than 40:
+                    delete {arcade::players::%{_p}%}
+                    delete {arcade::players::%{_p}%}
+                    set {arcade::spectator::%{_p}%} to {_p}
+                    broadcast "{@prefix} {@accent}There is %size of {arcade::players::*}% players remaining."
+                    set gamemode of {_p} to spectator
+                    push {_p} up with force 60
+                    launch ball large coloured light blue, blue and white fading to white and light blue at {_p}'s location with duration 3
+                    checkSize()
+        if {arcade::players::%{_p}%} is set:
+            if size of {arcade::players::*} is 1:
+                if y coordinate of {_p} is less than 40:
+                    push {_p} up with force 60
+        if {arcade::players::%{_p}%} is not set:
+            if y coordinate of {_p} is less than 40:
+                set gamemode of {_p} to spectator
+                push {_p} up with force 60
+                set {arcade::spectator::%{_p}%} to {_p}
+    if {-arcade::game} is "Bridges":
+        if {arcade::players::%{_p}%} is set:
+            if y coordinate of {_p} is less than 40:
+                loop 5 times:
+                    launch ball large coloured light blue, blue and white fading to white and light blue at {_p}'s location with duration 3
+                set {_loc} to location(0, 65, 0, world("Bridges"))
+                loop all blocks in radius 8 around {_loc}:
+                    if loop-block is not air:
+                        if block above loop-block is air:
+                            add loop-block to {_blocks::*}
+                            set {_tp} to random element out of {_blocks::*}
+                            teleport {_p} to block above {_tp}
+
+
+on block place:
+    if {-arcade::game} is "Bridges":
+        set slot 0 of player's inventory to 64 light blue concrete
+        wait 2 seconds
+        set event-block to light blue stained glass
+        wait 2 seconds
+        set event-block to air
+
+on item damage:
+    cancel event
+
+on death:
+    set {_p} to victim
+    cancel event
+    if {-arcade::game} is "ExplosiveBowBattle":
+        if {arcade::players::%{_p}%} is set:
+            if size of {arcade::players::*} > 1:
+                delete {arcade::players::%{_p}%}
+                set {arcade::spectator::%{_p}%} to {_p}
+                broadcast "{@prefix} {@accent}There is %size of {arcade::players::*}% players remaining."
+                set gamemode of {_p} to spectator
+                push {_p} up with force 60
+                launch ball large coloured light blue, blue and white fading to white and light blue at {_p}'s location with duration 3
+                checkSize()
+        if {arcade::players::%{_p}%} is not set:
+            set gamemode of {_p} to spectator
+            push {_p} up with force 60
+            set {arcade::spectator::%{_p}%} to {_p}
+    if {-arcade::game} is "Starwars":
+        if {arcade::players::%{_p}%} is set:
+            if size of {arcade::players::*} > 1:
+                delete {arcade::players::%{_p}%}
+                set {arcade::spectator::%{_p}%} to {_p}
+                broadcast "{@prefix} {@accent}There is %size of {arcade::players::*}% players remaining."
+                set gamemode of {_p} to spectator
+                launch ball large coloured light blue, blue and white fading to white and light blue at {_p}'s location with duration 3
+                checkSize()
+        if {arcade::players::%{_p}%} is not set:
+            set gamemode of {_p} to spectator
+            set {arcade::spectator::%{_p}%} to {_p}
+
+function checkSize():
+    if size of {arcade::players::*} is 1:
+        broadcast "%{arcade::players::*}% has won!"
+        wait 5 seconds
+        endGame()
+
+function endGame():
+    broadcast "{@accent}Sending you back to the Lobby."
+    teleport {arcade::spectator::*} to {spawn}
+    teleport {arcade::players::*} to {spawn}
+    set {-arcade::game} to "NONE"
+    set {-arcade::state} to "LOBBY"
+    delete {arcade::spectator::*}
+    delete {arcade::players::*}
+    loop all players:
+        set {arcade::players::%loop-player%} to loop-player
+        clear inventory of loop-player
+    wait 1 second
+    arcadeLobby()
+
+
+on damage:
+    if damage cause is fall:
+        cancel event
+    if {-arcade::game} is "NONE":
+        cancel event
+    if {-arcade::game} is "Bridges":
+        cancel event
+    if {-arcade::game} is "Starwars":
+        play 20 of soul at victim
+
+
+on food bar change:
+    cancel event
+
+function timerHolo():
+    if {-arcade::game} is "ExplosiveBowBattle":
+        create holo object "&fᄂ" with id "holo" at location(0, 75, 0, world("Explosive"))
+        wait 1.5 second
+        edit holo object "holo" to "&eᄁ"
+        wait 1.5 second
+        edit holo object "holo" to "&6ᄀ"
+        wait 1.5 second
+        edit holo object "holo" to "&aᄰ"
+        wait 1 seconds
+        delete holo object "holo"
+        set {-arcade::state} to "INGAME"
+        loop {arcade::players::*}:
+            set slot 0 of loop-value-1's inventory to bow of infinity
+            set slot 9 of loop-value-1's inventory to glowing arrow
+    if {-arcade::game} is "Bridges":
+        create holo object "&fᄂ" with id "holo" at location(0, 70, 18, world("Bridges"))
+        wait 1.5 second
+        edit holo object "holo" to "&eᄁ"
+        wait 1.5 second
+        edit holo object "holo" to "&6ᄀ"
+        wait 1.5 second
+        edit holo object "holo" to "&aᄰ"
+        wait 1 seconds
+        delete holo object "holo"
+        set {-arcade::state} to "INGAME"
+        loop {arcade::players::*}:
+            set slot 0 of loop-value-1's inventory to 64 light blue concrete
+    if {-arcade::game} is "Starwars":
+        create holo object "&fᄂ" with id "holo" at location(0, 70, 0, world("Starwars"))
+        wait 1.5 second
+        edit holo object "holo" to "&eᄁ"
+        wait 1.5 second
+        edit holo object "holo" to "&6ᄀ"
+        wait 1.5 second
+        edit holo object "holo" to "&aᄰ"
+        wait 1 seconds
+        delete holo object "holo"
+        set {-arcade::state} to "INGAME"
+        loop {arcade::players::*}:
+            set slot 0 of loop-value-1's inventory to wooden sword with custom model data 1001
+            equip loop-value with all leather armour
+            dye loop-value's helmet white
+            dye loop-value's chestplate purple
+            dye loop-value's leggings white
+            dye loop-value's boots purple
+
+on quit:
+    if {-arcade::state} is "LOBBY":
+        delete {arcade::players::%player%}
+    if {-arcade::state} is "INGAME":
+        delete {arcade::players::%player%}
+        wait 10 ticks
+        checkSize()  
+
+on join:
+    if {-arcade::state} is "LOBBY":
+        set {arcade::players::%player%} to player
+    if {-arcade::state} is "INGAME":
+        message "{@accent}There is a game active right now. Hang tight!"
+
+function arcadeLobby():
+    loop all players:
+        remove jump boost from loop-player
+        set {arcade::players::%loop-player%} to loop-player
+        teleport loop-player to {spawn}
+        set gamemode of loop-player to survival
+        clear inventory of loop-player
+    wait 5 seconds
+    broadcast "{@accent}Choosing Game..."
+    wait 2 seconds
+    runGame()
+
+

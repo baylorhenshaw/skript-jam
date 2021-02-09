@@ -1,0 +1,37 @@
+function playExplosive():
+    if size of {arcade::players::*} is 1:
+        broadcast "There is not enough players."
+    else:
+        set {-arcade::game} to "ExplosiveBowBattle"
+        execute console command "/fwr reset Explosive"
+        wait 1 second
+        set {_loc} to location(0, 65, 0, world("Explosive"))
+        loop {arcade::players::*}:
+            loop all blocks in radius 8 around {_loc}:
+                if loop-block is not air:
+                    if block above loop-block is air:
+                        add loop-block to {_blocks::*}
+                        set {_tp} to random element out of {_blocks::*}
+                        teleport loop-value-1 to block above {_tp}
+                        clear inventory of loop-value-1
+                        
+        wait 3 second
+        timerHolo()
+        checkSize()
+
+on projectile hit:
+    delete projectile
+    if {-arcade::game} is "ExplosiveBowBattle":
+        if {-arcade::state} is "INGAME":
+            loop blocks in radius 2 around event-location:
+                if loop-block is light blue concrete:
+                    spawn falling light blue concrete 0.1 meters below loop-block
+                    set loop-block to air
+
+on drop:
+    if {-arcade::game} is "ExplosiveBowBattle":
+        cancel event
+
+on damage:
+    if {-arcade::game} is "ExplosiveBowBattle":
+        set damage to 2
