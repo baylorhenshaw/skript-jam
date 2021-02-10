@@ -203,6 +203,8 @@ on damage:
             cancel the event
 
 on right click:
+    if the player's held item is {@glass2}:
+        cancel the event
     if the player's held item is {@firestaff}:
         set {_u} to player's uuid
         set {_t} to time since {%{_u}%::FSCooldown}
@@ -226,7 +228,7 @@ on right click:
             replace "<time>" in {_m} with "%15 - {_c}%"
             send formatted {_m}
     if the player's held item is {@robohand}:
-	cancel the event
+        cancel the event
         set {_u} to player's uuid
         set {_t} to time since {%{_u}%::RHCooldown}
         set {_c::*} to split "%{_t}%" at " "
