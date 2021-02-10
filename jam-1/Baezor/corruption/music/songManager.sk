@@ -1,0 +1,162 @@
+#
+#	Song Manager
+#	Version 1.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# Menu Materials
+	border-1: black stained glass pane #black stained glass pane#cyan stained glass pane
+	border-2: black stained glass pane #black stained glass pane#light blue stained glass pane
+	fill: gray stained glass pane
+	air: air
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 1.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: songManager
+
+#
+#	Register Songs
+#
+
+# Register Event
+on load:
+
+	# Start Registering
+	song_registerSong("dota", "plugins/FunkySk/songs/dota.nbs")
+	song_registerSong("lost_woods_zelda", "plugins/FunkySk/songs/lost_woods_zelda.nbs")
+	song_registerSong("a_day_before_tommorrow", "plugins/FunkySk/songs/a_day_before_tommorrow.nbs")
+	song_registerSong("over_the_horizen", "plugins/FunkySk/songs/over_the_horizen.nbs")
+	song_registerSong("fairy_tail", "plugins/FunkySk/songs/fairy_tail.nbs")
+	song_registerSong("fugue", "plugins/FunkySk/songs/fugue.nbs")
+	song_registerSong("demons", "plugins/FunkySk/songs/demons.nbs")
+	song_registerSong("something_just_like_this", "plugins/FunkySk/songs/something_just_like_this.nbs")
+	song_registerSong("battle_scars", "plugins/FunkySk/songs/battle_scars.nbs")
+
+# Unregister Event
+on unload:
+
+	# Start Unregistering
+	song_unregisterSongs()
+
+#
+#	Song Commands
+#
+
+# Song Command
+command /playsong [<text>]:
+	aliases: /playmusic
+	permission: *
+	permission message: {@permission-message}
+	trigger:
+		song_playSong(arg-1, player)
+
+# Tab completions.
+on tab complete of "/playmusic" or "/playsong":
+
+	# First Completions
+	set tab completions for position 1 to song_getSongs()
+
+# Song Command
+command /stopsong [<text>]:
+	aliases: /stopmusic
+	permission: *
+	permission message: {@permission-message}
+	trigger:
+		song_stopAllSongs(player)
+
+#
+#	Song Events
+#
+
+on quit:
+	song_stopAllSongs(player)
+
+#
+#	Song API
+#
+
+# Register Song
+function song_registerSong(id: text, path: text):
+	add {_id} to {{@storage}::songs::*}
+	set {{@storage}::songs::%{_id}%::song} to {_path}
+
+# Unregister Songs
+function song_unregisterSongs():
+	loop {{@storage}::songs::*}:
+		delete {{@storage}::songs::%loop-value%::song}
+		remove loop-value from {{@storage}::songs::*}
+	delete {{@storage}::songs::*}
+
+# Get Songs
+function song_getSongs() :: texts:
+	return {{@storage}::songs::*}
+	# Folding Line
+
+# Play Song
+function song_playSong(id: text, player: player):
+	{{@storage}::songs::%{_id}%::song} is set
+	song_stopAllSongs({_player})
+	wait 1 tick
+	set {_song} to a new song from file {{@storage}::songs::%{_id}%::song}
+	start new song {_song} to {_player} with id "%{_player}%.%{_id}%"
+
+# Stop Song
+function song_stopSong(id: text):
+	song with id {_id} is playing 
+	stop song with id {_id}
+	# Folding Line
+
+# Stop all Songs
+function song_stopAllSongs(player: offlineplayer):
+	loop song_getSongs():
+		song_stopSong("%{_player}%.%loop-value%")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

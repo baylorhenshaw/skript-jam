@@ -1,0 +1,694 @@
+#
+#	Main
+#	Version 2.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# Menu Materials
+	border-1: black stained glass pane #black stained glass pane#cyan stained glass pane
+	border-2: black stained glass pane #black stained glass pane#light blue stained glass pane
+	fill: gray stained glass pane
+	air: air
+
+	# Player Settings
+	min-players: 2
+	max-players: 6
+
+	# World
+	world: game
+
+	# Location
+	loc: location(0.5, 70, 0.5, world("game"))
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 2.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: game
+
+#
+#	Loading and Unloading
+#
+
+# Load Event
+on load:
+	if {{@storage}::gameStatus} is not set:
+		set {{@storage}::gameStatus} to "null"
+
+#
+#	Main Game Functions and Loops
+#
+
+# Start Game
+function game_startGame():
+
+	# Status Check
+	game_getStatus() is "null"
+
+	# Check Queue for Players
+	(amount of queue_getQueue()) is not less than {@min-players}
+
+	# Set Game Status
+	game_setStatus("starting")
+
+	# Global Count Down
+	set {_loopNum} to 15
+	loop 15 times:
+		if {_loopNum} is 15, 10 or 5:
+			game_broadcast("{@color-1}The game will start in &f%{_loopNum}% &fSeconds{@color-1}!")
+		subtract 1 from {_loopNum}
+		wait 1 second
+
+	# Queue Check
+	if (amount of queue_getQueue()) is less than {@min-players}:
+		game_broadcast("{@color-1}Not enough players were in the queue to start!")
+		game_setStatus("null")
+		exit
+	else:
+		game_broadcast("{@color-1}The game is starting! If you didn't join, try &f/spectate{@color-1}!")
+
+
+	# Select Players
+	set {_num} to 0
+	loop queue_getQueue():
+		queue_removePlayer(loop-value)
+		game_joinGroupGame(loop-value)
+		add 1 to {_num}
+		{_num} is {@max-players}
+		exit loop
+
+	# Music Start and Teleporting
+	loop game_getGroupGame():
+		song_playSong("fairy_tail", loop-value)
+		teleport loop-value to location(0.5, 102, 0.5, world("{@world}"))
+		set slot 4 of loop-value to class_getSelectorItem()
+		
+
+	# Map Generation
+	game_generateMap()
+
+	# Start Count Down
+	set {_loopNum} to 15
+	loop 15 times:
+		if {_loopNum} is 15, 10, 5,4,3,2 or 1:
+			loop game_getGroupGame():
+				send title "{@color-2}&l%{_loopNum}%{@color-2}&l Seconds" with subtitle "{@color-1}The game will start soon!" to loop-value-2 for 1 seconds with fadein 0 second and fade out 1 second
+				sklib_playPling(loop-value-2)
+		remove 1 from {_loopNum}
+		wait 1 second
+
+	# Starting Title and Push Start
+	loop (game_getGroupGame() and game_getGroupSpectator()):
+		send title "{@color-3}&lGame Starting" with subtitle "{@color-2}The game has started!" to loop-value for 3 seconds with fadein 0 second and fade out 1 second
+	game_broadcastActive("&fThe game has started!")
+	game_pushStart()
+
+	# Format Inventories
+	loop game_getGroupGame():
+		class_formatInventory(loop-value)
+
+	# Set Start Time
+	set {{@storage}::startTime} to now
+
+	# Set Game Status
+	game_setStatus("active")
+
+	# Start Loops
+	game_activeLoopOne() # 1 Second
+	game_activeLoopTwo() # 15 Second
+	game_activeLoopThree() # 30 Second
+
+# Game Active Loop One
+function game_activeLoopOne():
+
+	# Initial 1 Seconds
+	wait 1 seconds
+
+	# While Loop
+	while game_getStatus() is "active":
+
+		game_checkTimeLimit()
+		game_checkGamePlayers()
+
+		# Loop Exiting and Waiting
+		if game_getStatus() is not "active":
+			exit loop
+		wait 1 second
+
+# Game Active Loop Two
+function game_activeLoopTwo():
+
+	# Initial 15 Seconds
+	wait 15 seconds
+
+	# While Loop
+	while game_getStatus() is "active":
+
+		game_startCorruption()
+
+		# Loop Exiting and Waiting
+		if game_getStatus() is not "active":
+			exit loop
+		wait 15 second
+
+# Game Active Loop Two
+function game_activeLoopThree():
+
+	# Initial 30 Seconds
+	wait 30 seconds
+
+	# While Loop
+	while game_getStatus() is "active":
+
+		# Loop Stuff
+		game_grenadeRain()
+
+		# Loop Exiting and Waiting
+		if game_getStatus() is not "active":
+			exit loop
+		wait 30 second
+
+# Finish Game
+function game_finishGame(winner: player):
+
+	# Check if Finishing
+	game_getStatus() is "active"
+
+	# Set Game Status
+	game_setStatus("finishing")
+
+	# Winning Announcement
+	game_broadcastActive("{@color-1}The player {@color-2}%{_winner}%{@color-1} won the game!")
+
+	# Music Chanage & Clearning Inventories
+	set {_players::*} to game_getGroupSpectator() and game_getGroupGame()
+	loop {_players::*}:
+		song_playSong("over_the_horizen", loop-value)
+		clear loop-value's inventory
+
+	# Fireworks
+	loop 25 times:
+		launch ball large coloured red, pink and white fading to yellow and orange at {_winner}'s location with duration 1
+		wait 10 ticks
+
+	# End Game
+	game_endGame()
+
+# Force Finish Game
+function game_forceFinishGame(reason: text = "&7"):
+
+	# Check if Finishing
+	game_getStatus() is "active"
+
+	# Set Game Status
+	game_setStatus("finishing")
+
+	# Winning Announcement
+	game_broadcastActive("{@color-1}Nobody{@color-1} won the game! %{_reason}%")
+
+	# Music Chanage & Clearning Inventories
+	set {_players::*} to game_getGroupSpectator() and game_getGroupGame()
+	loop {_players::*}:
+		song_playSong("over_the_horizen", loop-value)
+		clear loop-value's inventory
+
+	wait 13 seconds
+
+	# End Game
+	game_endGame()
+
+# End Game
+function game_endGame():
+
+	# Purge Players
+	game_purgeGroupSpectator()
+	game_purgeGroupGame()
+
+	# Reset World
+	wait 5 ticks
+	execute console command "/fwr reset {@world}"
+	wait 5 ticks
+
+	# Delete Variables
+	delete {{@storage}::startTime}
+
+	# Set Game Status
+	game_setStatus("null")
+
+#
+#	Game Status
+#
+
+# Set Status
+function game_setStatus(status: text):
+	set {{@storage}::gameStatus} to {_status}
+	# Folding Line
+
+# Get Status
+function game_getStatus() :: text:
+	return {{@storage}::gameStatus}
+	# Folding Line
+
+# Get Elapsed Time
+function game_getElapsedTime() :: timespan:
+	return (difference between now and {{@storage}::startTime})
+	# Folding Line
+	
+#
+#	Map Creation & Corruption Logic
+#
+
+# Generate Map
+function game_generateMap():
+
+	# Select a Map Theme
+	set {_theme} to a random integer between 1 and 3
+	if {_theme} is 1:
+		set {_block1} to lime terracotta
+		set {_block2} to green terracotta
+	else if {_theme} is 2:
+		set {_block1} to pink terracotta
+		set {_block2} to red terracotta
+	else if {_theme} is 3:
+		set {_block1} to orange terracotta
+		set {_block2} to yellow terracotta
+
+	# Placing All Blocks
+	set {_loc} to {@loc}
+	loop 3 times:
+		set {_loc} to location 1 below {_loc}
+		set {_y} to y coordinate of {_loc}
+		set {_y} to floor({_y})
+		add {_y} to {_yL::*}
+		set {_radius} to 0
+		set {_block} to iron block
+		loop 5 times:
+			add 5 to {_radius}
+			loop all blocks in radius {_radius} of {_loc}:
+				set {_loopLoc} to location of loop-block
+				#broadcast "%y coordinate of {_loopLoc}%, %{_y}%"
+				floor(y coordinate of {_loopLoc}) is {_y}
+				loop-block is air
+				set loop-block to {_block}
+			# Change Pattern for Themes
+			if {_block} is iron block:
+				set {_block} to {_block1}
+			else if {_block} is {_block2}:
+				set {_block} to {_block1}
+			else:
+				set {_block} to {_block2}
+
+	# Save Y List for other functions.
+	set {{@storage}::yl::*} to {_yL::*}
+
+# Start Corruption Function
+function game_startCorruption():
+	
+	# Setting Location
+	set {_loc} to {@loc}
+
+	# Calc and find blocks that need to be corrupted.
+	loop all blocks in radius 30 of {_loc}:
+		loop-block is not air
+		{{@storage}::yl::*} contains floor(y coordinate of (location of loop-block))
+		loop-block is not iron block
+		checkBlock(location of loop-block) is true
+		add (location of loop-block) to {_blocks::*}
+
+	# Broadcast and Start Corruption
+	game_removeBorder({_blocks::*}, {_loc})
+	game_broadcastActive("&fBorder Shrinking!")
+
+# Remove Border Function
+function game_removeBorder(blocks: locations, loc: location):
+
+	# Border Removing Logic
+	set {_block} to red concrete
+	loop 10 times:
+		loop {_blocks::*}:
+			set block at loop-value-2 to {_block}
+		if {_block} is red concrete:
+			set {_block} to orange concrete
+		else:
+			set {_block} to red concrete
+		loop all players in radius 40 of {_loc}:
+			sklib_playPling(loop-player)
+		wait 5 ticks
+	loop {_blocks::*}:
+		set block at loop-value to air
+	loop all players in radius 40 of {_loc}:
+		sklib_playBass(loop-player)
+
+#
+#	Misc Game Functions
+#
+
+# Initial Launch of Players
+function game_pushStart():
+	set {_loc} to location(0.5, 102, 0.5, world("{@world}"))
+	loop game_getGroupGame():
+		push loop-value up at speed 2
+		apply blindness 3 to loop-value for 2 seconds
+	wait 5 ticks
+	loop all blocks in radius 13 of {_loc}:
+		loop-block is not air
+		set loop-block to air
+
+# Check if Need to Quit
+function game_checkTimeLimit():
+	game_getElapsedTime() is greater than 2 minutes
+	game_forceFinishGame("Ran out of time!")
+
+# Check if Game should end.
+function game_checkGamePlayers():
+	loop game_getGroupGame():
+		set {_lastPlayer} to loop-value
+		add 1 to {_loops}
+	{_loops} is 1
+	game_finishGame({_lastPlayer})
+
+#
+#	Damage and Player Death
+#
+
+# Damage Event
+on damage:
+	
+	# Victim/Attacker Check
+	victim is a player
+
+	# World Check
+	if world of victim is not world("{@world}"):
+		cancel event
+		game_sendError(attacker, "{@error-color}&lError! {@color-1}You cannot attack people here!")
+
+	if game_getStatus() is not "active":
+		set damage to 0
+		cancel event
+		game_sendError(attacker, "{@error-color}&lError! {@color-1}The game is currently not running! You cannot attack people!")
+
+	# Damage Type Check
+	if damage cause is not attack:
+		"%damage cause%" is not "unknown"
+		set damage to 0
+		cancel event
+
+	if damage cause is void:
+		set damage to 1000
+
+	# Death Check
+	(victim's health - damage) is less than or equal to 0
+	set damage to 0
+	set {_victimLoc} to location of victim
+	game_deathEvent(victim)
+
+	# Reward Sounds & Effects for Killer
+	if attacker is a player:
+		sklib_playExperienceOrb(attacker)
+		play sound "entity.player.death" in jukebox category at {_victimLoc}
+	launch ball large coloured red, purple and white fading to purple and pink at {_victimLoc} with duration 1
+
+	# Death Message
+	if attacker is a player:
+		game_broadcastActive("{@color-2}%victim% {@color-1}has been murdered by {@color-2}%attacker%{@color-1}!")
+	else:
+		game_broadcastActive("{@color-2}%victim% {@color-1}died!")
+
+	# Check if Win
+	wait 1 tick
+	game_checkGamePlayers()
+
+# Death Event - Called when a player dies in the game.
+function game_deathEvent(player: player):
+
+	# Group Switching
+	game_leaveGroupGame({_player})
+	game_joinGroupSpectator({_player})
+
+	# Title
+	send title "{@color-2}&lYou Died!" with subtitle "{@color-1}You are now a spectator." to {_player} for 5 seconds with fadein 1 second and fade out 1 second
+
+	# Music
+	wait 10 ticks
+	game_getStatus() is "active"
+	song_playSong("demons", {_player})
+
+#
+#	Join and Quit Events
+#
+
+# Joining
+on join:
+
+	# Setting gamemode and clearing inventory.
+	set {_player}'s gamemode to survival
+	clear {_player}'s inventory
+
+# Quitting
+on quit:
+	
+	# Leave All Groups
+	game_leaveAllGroups(player)
+
+	# Delete Misc Variables
+	delete {{@storage}::errorDelay::%player%}
+
+#
+#	Commands
+#
+
+# Specate Command
+command /spectate:
+	aliases: /watch
+	trigger:
+		if game_getStatus() is not "null": 
+			if game_getGroup(player) is not "game" or "finishing":
+
+				if game_getGroup(player) is "spectator":
+					game_leaveGroupSpectator(player)
+					send "{@prefix} {@color-1}You are no longer a spectator." to player
+
+				else:
+					game_joinGroupSpectator(player)
+					send "{@prefix} {@color-1}You are now a spectator!" to player
+					song_playSong("fairy_tail", player)
+
+			else:
+				send "{@prefix} {@error-color}You are in a game!" to player
+				sklib_playBass(player)
+		else:
+			send "{@prefix} {@error-color}The game is not running!" to player
+			sklib_playBass(player)
+
+#
+#	Misc Group API
+#
+
+# Get Group
+function game_getGroup(player: player) :: text:
+
+	# Check Spectator
+	loop {{@storage}::groups::spectator::*}:
+		loop-value is {_player}
+		return "spectator"
+
+	# Check Game
+	loop {{@storage}::groups::game::*}:
+		loop-value is {_player}
+		return "game"
+
+	# Return "none" if nothing has been returned.
+	return "none"
+
+# Leave All Groups
+function game_leaveAllGroups(player: offlineplayer):
+
+	# Leaving All Groups
+	game_leaveGroupSpectator({_player})
+	game_leaveGroupGame({_player})
+
+#
+#	Spectator Group
+#
+
+# Join Spectator
+function game_joinGroupSpectator(player: player):
+
+	# Joining Action
+	add {_player} to {{@storage}::groups::spectator::*}
+
+	# Teleport and Gamemode
+	teleport {_player} to location(0.5, 80, 0.5, world("game"))
+	set {_player}'s gamemode to spectator
+	clear {_player}'s inventory
+
+# Leave Spectator
+function game_leaveGroupSpectator(player: offlineplayer):
+
+	# Leaving Action
+	loop {{@storage}::groups::spectator::*}:
+		loop-value is {_player}
+		remove loop-value from {{@storage}::groups::spectator::*}
+	remove {_player} from {{@storage}::groups::spectator::*}
+	
+	# Teleport and Gamemode
+	teleport {_player} to core_getSpawn()
+	set {_player}'s gamemode to survival
+	clear {_player}'s inventory
+	heal {_player}
+	feed {_player}
+	song_stopAllSongs({_player})
+	set {_player}'s max health to 10
+	set {_player}'s health to 10
+
+# Get Spectator Group
+function game_getGroupSpectator() :: players:
+
+	# Returning the Group
+	return {{@storage}::groups::spectator::*}
+
+# Purger Spectator Group
+function game_purgeGroupSpectator():
+	
+	# Looping and Leaving
+	loop {{@storage}::groups::spectator::*}:
+		game_leaveGroupSpectator(loop-value)
+
+#
+#	Game Group
+#
+
+# Join Game
+function game_joinGroupGame(player: player):
+
+	# Joining Action
+	add {_player} to {{@storage}::groups::game::*}
+
+	# Teleport and Gamemode
+	set {_player}'s gamemode to survival
+	clear {_player}'s inventory
+
+# Leave Game
+function game_leaveGroupGame(player: offlineplayer):
+
+	# Leaving Action
+	loop {{@storage}::groups::game::*}:
+		loop-value is {_player}
+		remove loop-value from {{@storage}::groups::game::*}
+	remove {_player} from {{@storage}::groups::game::*}
+	
+	# Teleport and Gamemode
+	teleport {_player} to core_getSpawn()
+	set {_player}'s gamemode to survival
+	clear {_player}'s inventory
+	heal {_player}
+	feed {_player}
+	song_stopAllSongs({_player})
+	set {_player}'s max health to 10
+	set {_player}'s health to 10
+
+# Get Game Group
+function game_getGroupGame() :: players:
+
+	# Returning the Group
+	return {{@storage}::groups::game::*}
+
+# Purger Game Group
+function game_purgeGroupGame():
+	
+	# Looping and Leaving
+	loop {{@storage}::groups::game::*}:
+		game_leaveGroupGame(loop-value)
+
+#
+#	Misc Functions
+#
+
+# Send Error Message
+function game_sendError(player: player, text: text):
+	{{@storage}::errorDelay::%{_player}%} is not set
+	send {_text} to {_player}
+	sklib_playBass({_player})
+	set {{@storage}::errorDelay::%{_player}%} to true
+	wait 1 second
+	delete {{@storage}::errorDelay::%{_player}%}
+
+# Game Broadcast
+function game_broadcastActive(text: text):
+	
+	# Spectator Group
+	loop game_getGroupSpectator():
+		send "&7" to loop-value 
+		send "{@prefix} &f%{_text}%" to loop-value
+		send "&7" to loop-value 
+		sklib_playPling(loop-value)
+
+	# Game Group
+	loop game_getGroupGame():
+		send "&7" to loop-value 
+		send "{@prefix} &f%{_text}%" to loop-value
+		send "&7" to loop-value 
+		sklib_playPling(loop-value)
+
+# Broadcast to Everybody
+function game_broadcast(text: text):
+	loop all players:
+		sklib_playPling(loop-player)
+		send "&7" to loop-player
+		send "{@prefix} %{_text}%" to loop-player
+		send "&7" to loop-player
+
+#
+#	Game Events
+#
+
+function game_grenadeRain():
+	game_broadcastActive("Grenade Rain Event!")
+	loop 5 times:
+		spawn egg at game_getRandomLocation({@loc})
+
+function game_getRandomLocation(loc: location) :: location:
+	set {_loc} to location 15 above {_loc}
+	chance of 33%:
+		set {_loc} to location (random integer between 13 and 20) north {_loc}
+	chance of 33%:
+		set {_loc} to location (random integer between 13 and 20) south {_loc}
+	chance of 33%:
+		set {_loc} to location (random integer between 13 and 20) east {_loc}
+	chance of 33%:
+		set {_loc} to location (random integer between 13 and 20) west {_loc}
+	return {_loc}
+
+#
+#	Queue Checking
+#
+
+# 3 Second Checking
+every 3 seconds:
+	game_startGame()

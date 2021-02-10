@@ -1,0 +1,94 @@
+#
+#	World Navigator
+#	Version 1.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# Menu Materials
+	border-1: black stained glass pane #black stained glass pane#cyan stained glass pane
+	border-2: black stained glass pane #black stained glass pane#light blue stained glass pane
+	fill: gray stained glass pane
+	air: air
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 1.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: world
+
+#
+#	Main Command
+#
+
+# Open World Navigator Command
+command /worlds:
+	aliases: /world
+	permission: *
+	permission message: {@permission-message}
+	trigger:
+		world_openWorldNavigator(player)
+		sklib_playButtonClick(player)
+
+#
+#	Open World Navigator Menu
+#
+
+# Main Configuration Menu
+function world_openWorldNavigator(player: player):
+	create a gui with virtual chest named "World Navigator" with 5 rows:
+		make gui slot (integers between 0 and 44) to {@fill} named "&7"
+		make gui slot 0,2,4,6,8,18,26,36,38,40,42 and 44 to {@border-1} named "&7"
+		make gui slot 1,3,5,7,9,17,27,35,37,39,41 and 43 to {@border-2} named "&7"
+
+		make gui slot 20 to ("xghg" parsed as a offline player)'s skull named "{@color-3}Lobby World" with lore "&7", "&8• {@color-1}Click to teleport to the", "  {@color-1}lobby world!", "&7" and "{@color-2}Click to Teleport!":
+			execute player command "/mvtp lobby"
+			sklib_playButtonClick({_player})
+
+		make gui slot 22 to ("Axis_Mars" parsed as a offline player)'s skull named "{@color-3}Test World" with lore "&7", "&8• {@color-1}Click to teleport to the", "  {@color-1}test world!", "&7" and "{@color-2}Click to Teleport!":
+			execute player command "/mvtp test"
+			sklib_playButtonClick({_player})
+
+		make gui slot 24 to ("earth_gang" parsed as a offline player)'s skull named "{@color-3}Game World" with lore "&7", "&8• {@color-1}Click to teleport to the", "  {@color-1}game world!", "&7" and "{@color-2}Click to Teleport!":
+			execute player command "/mvtp game"
+			sklib_playButtonClick({_player})
+
+	open last gui to {_player}
+
+
+
+
+
+
+
+
+
+
+
+
+

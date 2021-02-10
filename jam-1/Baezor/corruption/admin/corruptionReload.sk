@@ -1,0 +1,63 @@
+#
+#	Corruption Reload
+#	Version 1.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# Menu Materials
+	border-1: black stained glass pane #black stained glass pane#cyan stained glass pane
+	border-2: black stained glass pane #black stained glass pane#light blue stained glass pane
+	fill: gray stained glass pane
+	air: air
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 1.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: reload
+
+#
+#	Reload Stuff
+#
+
+# Reload Command
+command /creload:
+	aliases: /cr
+	permission: *
+	permission message: {@permission-message}
+	trigger:
+		set {_time} to now
+		send "{@prefix} {@color-1}Reloading all Corruption files." to player
+		sklib_playButtonClick(player)
+		execute player command "/sk reload corruption/"
+		send "{@prefix} {@color-1}Reloaded all Corruption files! &8(&f%difference between now and {_time}%&8)" to player
+		sklib_playExperienceOrb(player)
+
+
+

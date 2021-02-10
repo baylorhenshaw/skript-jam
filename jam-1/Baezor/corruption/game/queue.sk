@@ -1,0 +1,171 @@
+#
+#	Queue
+#	Version 1.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# Menu Materials
+	border-1: black stained glass pane #black stained glass pane#cyan stained glass pane
+	border-2: black stained glass pane #black stained glass pane#light blue stained glass pane
+	fill: gray stained glass pane
+	air: air
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 1.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: queue
+
+#
+#	Queue Commands
+#
+
+# Queue Command
+command /queue [<text>]:
+	aliases: /q
+	executable by: player
+	trigger:
+		if game_getGroup(player) is "game":
+			send "{@prefix} {@error-color}You are in a game!" to player
+			sklib_playBass(player)
+		if arg-1 is not set:
+			if queue_isInQueue(player) is not true:
+				execute player command "/queue join"
+			else:
+				execute player command "/queue leave"
+
+		else if arg-1 is "join":
+			if queue_isInQueue(player) is not true:
+				queue_addPlayer(player)
+				send "{@prefix} {@color-1}You have joined the queue! You are in position {@color-2}##%queue_getPosition(player)%{@color-1}!" to player
+				sklib_playExperienceOrb(player)
+				while queue_isInQueue(player) is true:
+					send action bar "{@color-3}&k||| {@color-1}You are in position {@color-2}##%queue_getPosition(player)%{@color-1} for the queue. {@color-3}&k|||" to player
+					wait 3 ticks
+			else:
+				send "{@prefix} {@error-color}You are already in the queue!" to player
+				sklib_playBass(player)
+
+		else if arg-1 is "leave":
+			if queue_isInQueue(player) is true:
+				queue_removePlayer(player)
+				send "{@prefix} {@color-1}You have left the queue!" to player
+				sklib_playExperienceOrb(player)
+			else:
+				send "{@prefix} {@error-color}You are not in the queue!" to player
+				sklib_playBass(player)
+
+		else if arg-1 is "list" or "view":
+			if player has permission "*":
+				if (amount of queue_getQueue()) is greater than 0:
+					send "{@color-2}Queue &8({@color-1}%amount of queue_getQueue()%{@color-1} player(s) queued.&8)" to player
+					set {_num} to 0
+					loop queue_getQueue():
+						add 1 to {_num}
+						send "&8- {@color-2}%loop-value% &8(&f##%{_num}%&8)" to player
+				else:
+					send "{@prefix} {@error-color}Nobody is queued!" to player
+					sklib_playBass(player)
+			else:
+				send "{@permission-message}" to player
+
+		else if arg-1 is "reset":
+			if player has permission "*":
+				queue_resetQueue()
+				broadcast "{@prefix} {@color-1}The queue has been reset by {@color-2}%player%{@color-1}!"
+				loop all players:
+					sklib_playPling(loop-player)
+			else:
+				send "{@permission-message}" to player
+
+		else:
+			send "{@prefix} {@error-color}Invalid arguments! Try /queue (join|leave)!" to player
+			sklib_playBass(player)
+
+# Tab completions.
+on tab complete of "/queue" or "/q":
+
+	set {_completions::*} to "join" and "leave"
+
+	if player has permission "*":
+		add "reset", "view", and "list" to {_completions::*}
+
+	# First Completions
+	set tab completions for position 1 to {_completions::*}
+
+#
+#	Queue API
+#
+
+# Get Queue
+function queue_getQueue() :: players:
+	return {{@storage}::playerList::*}
+
+# Reset Queue
+function queue_resetQueue():
+	delete {{@storage}::playerList::*}
+
+# Is in Queue
+function queue_isInQueue(player: offlineplayer) :: boolean:
+	if {{@storage}::playerList::*} contains {_player}:
+		return true
+	return false
+
+# Add Player to Queue
+function queue_addPlayer(player: player):
+	add {_player} to {{@storage}::playerList::*}
+
+# Remove Player from Queue
+function queue_removePlayer(player: offlineplayer):
+	remove {_player} from {{@storage}::playerList::*}
+
+# Get Position
+function queue_getPosition(player: player) :: number:
+	loop {{@storage}::playerList::*}:
+		loop-value is {_player}
+		set {_index} to loop-index parsed as a number
+		return {_index}
+	return 0
+
+# Leave Queue on Quit
+on quit:
+	queue_removePlayer(player)
+
+
+
+
+
+
+
+
+
+
+
+
+

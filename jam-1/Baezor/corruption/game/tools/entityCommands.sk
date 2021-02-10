@@ -1,0 +1,91 @@
+#
+#	Entity Commands OLD!
+#	Version: 1.0.0
+#
+#	Written by Baezor
+#
+
+#
+#	Option Configuration
+#
+options:
+
+	#
+	# Menu & Message Colors/Materials
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &6Server &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &e
+	color-3: &6
+	error-color: &c
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Entity Commands you have.
+	version: 1.1.0-OLD
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: entitycmd
+
+# Entity Commands
+
+command /ecmd [<text>] [<text>]:
+	aliases: /entitycmd
+	permission: lyra.entitycommands
+	permission message: {@permission-message}
+	executable by: player
+	usage: {@prefix} {@error-color}Invalid arguments! Try /ecmd help for help!
+	trigger:
+		if arg-1 is "help":
+			send "&8&m         &r {@color-3}&lEntity Commands &8&m         " to player
+			send "&8• {@color-2}/ecmd help" to player
+			send "&8• {@color-2}/ecmd wand" to player
+			send "&8• {@color-2}/ecmd set (command)" to player
+			send "&8• {@color-2}/ecmd delete" to player
+			send "&8&m                                             " to player
+		else if arg-1 is "wand":
+			give player wooden shovel
+			send "{@prefix} {@color-1}You have been given a entity command wand."
+		else if arg-1 is "set":
+			if {{@storage}::entitySel::%player%} is set:
+				if arg-2 is set:
+					set {_name} to {{@storage}::entitySel::%player%}
+					add {_name} to {{@storage}::entityList::*}
+					set {{@storage}::entityList::%{_name}%} to "/%arg-2%"
+					send "{@prefix} {@color-1}You set the command for {@color-2}%{_name}%{@color-1}." to player
+					delete {{@storage}::entitySel::%player%}
+				else:
+					send "{@prefix} {@error-color}Invalid Arguments! Try /ecmd set (command)!" to player
+			else:
+				send "{@prefix} {@error-color}You need to select a entity!" to player
+		else if arg-1 is "delete":
+			if {{@storage}::entitySel::%player%} is set:
+				set {_name} to {{@storage}::entitySel::%player%}
+				remove {_name} from {{@storage}::entityList::*}
+				delete {{@storage}::entityList::%{_name}%}
+				send "{@prefix} {@color-1}You deleted a entity's command." to player
+				delete {{@storage}::entitySel::%player%}
+			else:	
+				send "{@prefix} {@error-color}You need to select a entity!" to player
+		else:
+			send "{@prefix} {@error-color}Invalid arguments! Try /ecmd help for help!" to player
+
+on right click on player:
+	player has the permission "lyra.entitycommands"
+	player is holding a wooden shovel
+	send "{@prefix} {@color-1}You have selected a entity." to player
+	set {{@storage}::entitySel::%player%} to name of event-entity
+
+on right click on player:
+	{{@storage}::entityList::*} contains name of event-entity
+	loop {{@storage}::entityList::*}:
+		if loop-value is name of event-entity:
+			execute player command "%{{@storage}::entityList::%loop-value%}%"
+			exit

@@ -1,0 +1,513 @@
+#
+#	Classes
+#	Version 1.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# Menu Materials
+	border-1: black stained glass pane #black stained glass pane#cyan stained glass pane
+	border-2: black stained glass pane #black stained glass pane#light blue stained glass pane
+	fill: gray stained glass pane
+	air: air
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 1.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: classes
+
+#
+#	Join Event
+#
+
+# Join Event
+on join:
+	{{@storage}::class::%player%} is not set
+	class_setClass({_player})
+
+#
+#	Class API
+#
+
+# Get Class
+function class_getClass(player: offlineplayer) :: text:
+	if {{@storage}::class::%{_player}%} is not set:
+		set {{@storage}::class::%{_player}%} to class_getRandomClass()
+	return {{@storage}::class::%{_player}%}
+
+# Set Class
+function class_setClass(player: player, class: text = "ninja"):
+	set {{@storage}::class::%{_player}%} to {_class}
+	sklib_playPling({_player})
+	send "{@prefix} {@color-1}You changed your class to {@color-2}%{_class}%{@color-1}!" to {_player}
+
+# Get Random Class
+function class_getRandomClass() :: text:
+	set {_num} to random integer between 1 and 3
+	if {_num} is 1:
+		return "ninja"
+	else if {_num} is 2:
+		return "demolitionist"
+	else:
+		return "berserker"
+
+#
+#	Inventory Formatting
+#
+
+function class_formatInventory(player: player):
+	set slots (integers between 0 and 35) of {_player} to black stained glass pane named "&7"
+	set slots (0, 1, 2 and 8) of {_player} to barrier named "&cCooldown"
+	set slot 4 of {_player} to class_getHealthItem()
+	set {_player}'s selected hotbar slot to slot 8 of {_player}
+
+	if class_getClass({_player}) is "ninja":
+		set {_player}'s max health to 25
+		set {_player}'s health to 25
+		set slot 8 of {_player} to stone sword named "{@color-3}Ninja Dagger" with all flags hidden
+		set slot 0 of {_player} to class_getJumpItem()
+		set slot 1 of {_player} to class_getSpeedItem()
+		set slot 2 of {_player} to class_getNinjaStarItem()
+
+	else if class_getClass({_player}) is "demolitionist":
+		set {_player}'s max health to 30
+		set {_player}'s health to 35
+		set slot 8 of {_player} to wooden axe named "{@color-3}Demolitionist Axe" with all flags hidden
+		set slot 0 of {_player} to class_getJumpItem()
+		set slot 1 of {_player} to class_getGrenadeItem()
+		set slot 2 of {_player} to class_getShockwaveItem()
+
+
+	else:
+		set {_player}'s max health to 20
+		set {_player}'s health to 20
+		set slot 8 of {_player} to iron sword named "{@color-3}Berserker Sword" with all flags hidden
+		set slot 0 of {_player} to class_getJumpItem()
+		set slot 1 of {_player} to class_getStrengthItem()
+		set slot 2 of {_player} to class_getBloodGodItem()
+
+#
+#	Abilities and Activation
+#
+
+# Hotbar Switch Event
+on hotbar switch:
+
+	game_getStatus() is "active"
+
+	# Jump Ability
+	if player's held item is class_getJumpItem():
+		class_abilityJump(player, new hotbar slot)
+
+	else if player's held item is class_getHealthItem():
+		class_abilityHeal(player, new hotbar slot)
+
+	else if player's held item is class_getSpeedItem():
+		class_abilitySpeed(player, new hotbar slot)
+
+	else if player's held item is class_getNinjaStarItem():
+		class_abilityNinjaStar(player, new hotbar slot)
+
+	else if player's held item is class_getStrengthItem():
+		class_abilityStrength(player, new hotbar slot)
+
+	else if player's held item is class_getBloodGodItem():
+		class_abilityBloodGod(player, new hotbar slot)
+
+	else if player's held item is class_getShockwaveItem():
+		class_abilityShockwave(player, new hotbar slot)
+
+	else if player's held item is class_getGrenadeItem():
+		class_abilityGrenade(player, new hotbar slot)
+
+	else if player's held item is barrier:
+		game_sendError(player, "{@prefix} {@error-color}This ability is on cooldown!")
+
+
+	cancel event
+
+# Inventory Click
+on Inventory click:
+
+	game_getStatus() is not "null"
+	cancel event
+
+# Inventory Click
+on swap hand items:
+
+	game_getStatus() is not "null"
+	cancel event
+
+# On Drop
+on drop:
+
+	game_getStatus() is not "null"
+	cancel event
+
+# Placing
+on place:
+
+	game_getStatus() is not "null"
+	cancel event
+
+# Breaking
+on break:
+
+	game_getStatus() is not "null"
+	cancel event
+
+# Anti-Hunger loss
+on hunger bar change:
+
+	cancel event
+
+# Anti-Hunger loss
+on item damage:
+
+	cancel event
+
+#
+#	Global Abilities
+#
+
+# Heal Ability
+function class_abilityHeal(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &dheal{@color-1}!" to {_player}
+
+	# Ability
+	set {_player}'s health to ({_player}'s health+7.5)
+	play sound "entity.wandering_trader.drink_potion" with volume 1 with pitch 1 at {_player}'s location for {_player}
+
+	# Set Slot
+	set {_cooldown} to 8
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getHealthItem()
+
+# Heal Ability Item
+function class_getHealthItem() :: item:
+	return potion of strong healing named "&dHealth Potion" with all flags hidden
+
+# Jump Ability
+function class_abilityJump(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &3high jump{@color-1}!" to {_player}
+
+	# Ability
+	push {_player} up at speed 1
+	push {_player} forward at speed 0.5
+	play sound "item.armor.equip_elytra" with volume 1 with pitch 1 at {_player}'s location for {_player}
+
+	# Cooldown for ability.
+	set {_cooldown} to 5
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getJumpItem()
+
+# Jump Ability Item
+function class_getJumpItem() :: item:
+	return feather named "&3High Jump" with all flags hidden
+
+#
+#	Ninja Abilities
+#
+
+# Speed Ability
+function class_abilitySpeed(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &bspeed{@color-1}!" to {_player}
+
+	# Ability
+	apply speed 3 to {_player} for 10 seconds
+	play sound "entity.wandering_trader.drink_potion" with volume 1 with pitch 1 at {_player}'s location for {_player}
+
+	# Cooldown for ability.
+	set {_cooldown} to 20
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getSpeedItem()
+
+# Speed Ability Item
+function class_getSpeedItem() :: item:
+	return potion of strong speed named "&bSpeed" with all flags hidden#entity.arrow.shoot
+
+# Speed Ability
+function class_abilityNinjaStar(player: player, slot: number):
+
+	game_getStatus() is "active"
+
+	# Ability
+	if target entity of {_player} is not set:
+		game_sendError({_player}, "&3&lError! {@color-1}You must target a player!")
+		exit
+
+	send "{@prefix} {@color-1}You used the ability &cninja star{@color-1}!" to {_player}
+	damage target entity of {_player} by 7
+
+	loop all players in radius 30 of {_player}:
+		play sound "entity.arrow.shoot" with volume 1 with pitch 1 at loop-player's location for loop-player
+
+	set {_line::*} to line from (location 1 above location of {_player}) to (location 1 above location of target entity of {_player}) with density 5
+	loop {_line::*}:
+		play 1 of dust using dustOption(light blue, 2) at loop-value for players
+
+	# Cooldown for ability.
+	set {_cooldown} to 25
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getNinjaStarItem()
+
+# Ninja Star Ability Item
+function class_getNinjaStarItem() :: item:
+	return nether star named "&cNinja Star" with all flags hidden
+
+#
+#	Berserker Abilities
+#
+
+# Strength Ability
+function class_abilityStrength(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &4strength{@color-1}!" to {_player}
+
+	# Ability
+	apply strength 2 to {_player} for 7 seconds
+	play sound "entity.wandering_trader.drink_potion" with volume 1 with pitch 1 at {_player}'s location for {_player}
+
+	# Cooldown for ability.
+	set {_cooldown} to 20
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getStrengthItem()
+
+# Strength Ability Item
+function class_getStrengthItem() :: item:
+	return potion of strong strength named "&4Strength" with all flags hidden
+
+# Blood God Ability
+function class_abilityBloodGod(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &cBlood God{@color-1}!" to {_player}
+
+	# Ability
+	class_startBloodGod({_player})
+
+	# Cooldown for ability.
+	set {_cooldown} to 45
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getBloodGodItem()
+
+# Start Blood God
+function class_startBloodGod(player: player):
+	game_getStatus() is "active"
+	loop 10 times:
+		game_getStatus() is "active"
+		loop all players in radius 30 of {_player}:
+			sklib_playPling(loop-player)
+		wait 1 tick
+
+	game_getStatus() is "active"
+	push {_player} up at speed 2
+	wait 5 ticks
+	game_getStatus() is "active"
+	play sound "entity.wither.spawn" with volume 3 with pitch 1 at {_player}'s location for players
+	wait 5 ticks
+
+	loop 9 times:
+		game_getStatus() is "active"
+		loop game_getGroupGame():
+			loop-value-2 is not {_player}
+			damage loop-value-2 by 1
+			set block at location of loop-value-2 to redstone dust
+		wait 5 tick
+
+# Strength Ability Item
+function class_getBloodGodItem() :: item:
+	return redstone named "&cBlood God" with all flags hidden
+
+#
+#	Demolitionist Abilities
+#
+
+# Shockwave Ability
+function class_abilityShockwave(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &6shockwave{@color-1}!" to {_player}
+
+	# Ability
+	play sound "entity.evoker.prepare_attack" with volume 3 with pitch 1 at {_player}'s location for players
+	loop all players in radius 9 of {_player}:
+		loop-player is not {_player}
+		push loop-player up at speed 1.5
+		damage loop-player by 4
+
+
+	# Cooldown for ability.
+	set {_cooldown} to 20
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getShockwaveItem()
+
+# Shockwave Ability Item
+function class_getShockwaveItem() :: item:
+	return quartz named "&6Shockwave" with all flags hidden
+
+# Shockwave Ability
+function class_abilityGrenade(player: player, slot: number):
+
+	game_getStatus() is "active"
+	send "{@prefix} {@color-1}You used the ability &egrenade{@color-1}!" to {_player}
+
+	# Ability
+	make {_player} shoot egg at speed 1
+
+
+	# Cooldown for ability.
+	set {_cooldown} to 20
+	loop {_cooldown} times:
+		game_getStatus() is "active"
+		set slot {_slot} of {_player} to {_cooldown} of barrier named "&cCooldown"
+		remove 1 from {_cooldown}
+		wait 1 second
+	game_getStatus() is "active"
+	set slot {_slot} of {_player} to class_getGrenadeItem()
+
+# Shockwave Ability Item
+function class_getGrenadeItem() :: item:
+	return egg named "&eGrenade" with all flags hidden
+
+#
+#	Class Selector
+#
+
+# Main Selector Menu
+function class_openSelector(player: player):
+	create a gui with virtual chest named "Class Selector" with 5 rows:
+		make gui slot (integers between 0 and 44) to {@fill} named "&7"
+		make gui slot 0,2,4,6,8,18,26,36,38,40,42 and 44 to {@border-1} named "&7"
+		make gui slot 1,3,5,7,9,17,27,35,37,39,41 and 43 to {@border-2} named "&7"
+
+		make gui slot 20 to stone sword named "&9Ninja Class" with lore "&7", "&8• {@color-1}Be fast like ninja!", "&7", "&8• {@color-1}Abilities:", "  &8- &3High Jump", "  &8- &bSpeed III", "  &8- &cNinja Star", "&7" and "&3Click to Select!" with all flags hidden:
+			close {_player}'s inventory
+			class_setClass({_player})
+
+		make gui slot 21 to wooden axe named "&4Demolitionist Class" with lore "&7", "&8• {@color-1}Boom! Boom! Boom!", "&7", "&8• {@color-1}Abilities:", "  &8- &3High Jump", "  &8- &eGrenade", "  &8- &6Shockwave", "&7" and "&cClick to Select!" with all flags hidden:
+			close {_player}'s inventory
+			class_setClass({_player}, "demolitionist")
+
+		make gui slot 22 to iron sword named "&6Berserker Class" with lore "&7", "&8• {@color-1}Big Damage! Little Health. :(", "&7", "&8• {@color-1}Abilities:", "  &8- &3High Jump", "  &8- &cStrength I", "  &8- &4Blood God", "&7" and "&eClick to Select!" with all flags hidden:
+			close {_player}'s inventory
+			class_setClass({_player}, "berserker")
+
+		make gui slot 24 to ("D20__" parsed as a offlineplayer)'s skull named "&cRandom Class" with lore "&7", "&8• {@color-1}Click to pick a random class!", "&7" and "&cClick to Change!":
+			close {_player}'s inventory
+			class_setClass({_player}, class_getRandomClass())
+
+	open last gui to {_player}
+
+# Get Slector Item
+function class_getSelectorItem() :: item:
+	return bow named "&6Class Selector" with all flags hidden
+
+# Right Click Event
+on right click with bow:
+	cancel event
+	class_openSelector(player)
+
+
+#
+#	boom
+#
+
+on projectile hit:
+	set {_loc} to location of event-projectile
+	if event-projectile is a egg:
+
+		cancel event
+		world of {_loc} is world("game")
+
+		loop 10 times:
+			loop all players in radius 20 of {_loc}:
+				sklib_playPling(loop-player)
+			if block at {_loc} is not red stained glass:
+				set block at {_loc} to red stained glass
+			else:
+				set block at {_loc} to orange stained glass
+			wait 3 ticks
+
+		launch ball large coloured red, purple and white fading to light green and yellow at {_loc} with duration 0.1
+
+		wait 2 ticks
+
+		loop all blocks in radius 5 of {_loc}:
+			loop-block is not air
+			loop-block is not iron block
+			loop-block is not beacon
+			loop-block is not end portal frame
+			set loop-block to air
+		create safe explosion with force 10 at {_loc}
+		loop all players in radius 10 of {_loc}:
+			push loop-player up at speed 1.520
+			damage loop-player by 4

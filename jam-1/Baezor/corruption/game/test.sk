@@ -1,0 +1,134 @@
+command /circlegen:
+	trigger:
+		genCircle(player's location)
+
+
+function genCircle(loc: location):
+	#set {_loc} to location 1 below {_loc}
+	#set {_y} to y coordinate of {_loc}
+	#set {_y} to floor({_y})
+	#loop all blocks in radius 30 of {_loc}:
+	#	set {_loopLoc} to location of loop-block
+	#	floor(y coordinate of {_loopLoc}) is {_y}
+	#	loop-block is air
+	#	set loop-block to lime stained glass
+
+	loop 3 times:
+		set {_loc} to location 1 below {_loc}
+		set {_y} to y coordinate of {_loc}
+		set {_y} to floor({_y})
+		add {_y} to {_yL::*}
+		set {_radius} to 0
+		set {_block} to iron block
+		loop 5 times:
+			add 5 to {_radius}
+			loop all blocks in radius {_radius} of {_loc}:
+				set {_loopLoc} to location of loop-block
+				#broadcast "%y coordinate of {_loopLoc}%, %{_y}%"
+				floor(y coordinate of {_loopLoc}) is {_y}
+				loop-block is air
+				set loop-block to {_block}
+			if {_block} is iron block:
+				set {_block} to lime stained glass
+			else if {_block} is green stained glass:
+				set {_block} to lime stained glass
+			else:
+				set {_block} to green stained glass
+
+			wait 5 ticks
+
+	loop 10 times:
+		delete {_blocks::*}
+		loop all blocks in radius 30 of {_loc}:
+			loop-block is not air
+			{_yL::*} contains floor(y coordinate of (location of loop-block))
+			loop-block is not iron block
+			checkBlock(location of loop-block) is true
+			add (location of loop-block) to {_blocks::*}
+		removeBorder({_blocks::*}, {_loc})
+		wait 7 seconds
+
+
+
+	exit
+
+	loop 3 times:
+		set {_loc} to location 1 below {_loc}
+		set {_y} to y coordinate of {_loc}
+		set {_y} to floor({_y})
+		set {_radius} to 0
+		set {_block} to iron block
+		loop 5 times:
+			add 5 to {_radius}
+			loop all blocks in radius {_radius} of {_loc}:
+				set {_loopLoc} to location of loop-block
+				#broadcast "%y coordinate of {_loopLoc}%, %{_y}%"
+				floor(y coordinate of {_loopLoc}) is {_y}
+				loop-block is air
+				set loop-block to {_block}
+			if {_block} is iron block:
+				set {_block} to lime stained glass
+			else if {_block} is green stained glass:
+				set {_block} to lime stained glass
+			else:
+				set {_block} to green stained glass
+
+	exit
+	loop 4 times:
+		delete {_blockList::*}
+		loop all blocks in radius 30 of {_loc}:
+			checkBlock(location of loop-block) is true
+			add location of loop-block to {_blockList::*}
+
+		loop 5 times:
+			set {_block} to red terracotta
+			loop {_blockList::*}:
+
+				block at loop-value-3 is not air
+				set block at loop-value-3 to {_block}
+
+				if {_block} is red terracotta:
+					set {_block} to orange terracotta
+				else:
+					set {_block} to red terracotta
+			wait 10 ticks
+
+		loop {_blockList::*}:
+			set block at loop-value-2 to air
+
+		wait 2 seconds
+
+function removeBorder(blocks: locations, loc: location):
+	set {_block} to red terracotta
+	loop 10 times:
+		loop {_blocks::*}:
+			set block at loop-value-2 to {_block}
+		if {_block} is red terracotta:
+			set {_block} to orange terracotta
+		else:
+			set {_block} to red terracotta
+		loop all players in radius 30 of {_loc}:
+			sklib_playPling(loop-player)
+		wait 7 ticks
+	loop {_blocks::*}:
+		set block at loop-value to air
+	loop all players in radius 30 of {_loc}:
+		sklib_playBass(loop-player)
+
+function checkBlock(loc: location) :: boolean:
+	if block at location 1 north of {_loc} is air:
+		add 1 to {_count}
+	if block at location 1 south of {_loc} is air:
+		add 1 to {_count}
+	if block at location 1 east of {_loc} is air:
+		add 1 to {_count}
+	if block at location 1 west of {_loc} is air:
+		add 1 to {_count}
+
+	if {_count} is greater than 0:
+		return true
+	return false
+
+
+
+

@@ -1,0 +1,129 @@
+#
+#	Structures
+#	Version 1.0.0
+#
+# 	Written by Baezor.
+#
+
+#
+#	Option Configuration
+#
+
+# Options.
+options:
+	
+	#
+	#	Colors and Messages
+	#
+
+	# The prefix option allows you to change the prefix of all messages.
+	prefix: &cCorruption &8»
+
+	# Configure message colors.
+	color-1: &7
+	color-2: &c
+	color-3: &4
+	error-color: &c
+
+	# The permission message is the message that shows when a player does not have
+	# permission for a command.
+	permission-message: &c&lError! &7You do not have permission to use this command!
+
+	# The version of Islands you have.
+	version: 1.0.0
+
+	# This is the storage prefix for the entire script. DO NOT ever change this unless
+	# the variables conflict with another script!
+	storage: structures
+
+#
+#	Structure Command
+#
+
+# Structure Command
+command /structure [<text>] [<text>]:
+	aliases: /struct
+	permission: *
+	permission message: {@permission-message}
+	trigger:
+		if arg-1 is not set:
+			send "{@prefix} {@error-color}You must set a first argument." to player
+
+		else if arg-1 is "wand":
+			send "{@prefix} {@color-1}You have been given a wand." to player
+			give player carrot on a stick
+
+		else if arg-1 is "save":
+			if arg-2 is set:
+				if {{@storage}::selections::%player%::one} is set:
+					if {{@storage}::selections::%player%::two} is set:
+						schem_saveStructure(arg-2, {{@storage}::selections::%player%::one}, {{@storage}::selections::%player%::two})
+						send "{@prefix} {@color-1}You have saved the structure {@color-2}""%arg-2%{@color-2}""{@color-1}!" to player
+						delete {{@storage}::selections::%player%::one}
+						delete {{@storage}::selections::%player%::two}
+					else:
+						send "{@prefix} {@error-color}You must select a second point!" to player
+				else:
+					send "{@prefix} {@error-color}You must select a first point!" to player
+				
+			else:
+				send "{@prefix} {@error-color}Invalid arguments! Try /structure save (name)!" to player
+
+		else if arg-1 is "load" or "paste":
+			if arg-2 is set:
+				send "{@prefix} {@color-1}Attempting to load structure {@color-2}""%arg-2%{@color-2}""{@color-1} at your location!" to player
+				schem_pasteStructure(arg-2, player's location)
+			else:
+				send "{@prefix} {@error-color}Invalid arguments! Try /structure load (name)!" to player
+
+		else:
+			send "{@prefix} {@error-color}Invalid arguments! Try /structure (save|load) (name)!" to player
+
+# Tab completions.
+on tab complete of "/structure" or "/struct":
+
+	# First Completions
+	set tab completions for position 1 to "paste", "load", "wand" and "save"
+
+#
+#	Structure Wand
+#
+
+# Selections First
+on left click with carrot on a stick:
+	player has permission "*"
+	cancel event
+	event-block is set
+	{{@storage}::selections::%player%::one} is not location of event-block
+	send "{@prefix} {@color-1}You have selected your first point!" to player
+	set {{@storage}::selections::%player%::one} to location of event-block
+
+
+# Selections Second
+on right click with carrot on a stick:
+	player has permission "*"
+	cancel event
+	event-block is set
+	{{@storage}::selections::%player%::two} is not location of event-block
+	send "{@prefix} {@color-1}You have selected your second point!" to player
+	set {{@storage}::selections::%player%::two} to location of event-block
+
+# Quit Delete Variables
+on quit:
+	delete {{@storage}::selections::%player%::one}
+	delete {{@storage}::selections::%player%::two}
+
+#
+#	Structure API
+#
+
+# Save Structure
+function schem_saveStructure(id: text, loc1: location, loc2: location):
+	save structure between {_loc1} and {_loc2} as {_id}
+
+# Paste Structure
+function schem_pasteStructure(id: text, loc: location):
+	load {_id} at {_loc}
+
+
+
