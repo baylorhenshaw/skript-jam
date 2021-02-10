@@ -46,6 +46,7 @@ function FFA_tp(player : player):
             if {_player} is on fire:
                 extinguish {_player}
             wait 1 tick
+            set {_player}'s selected hotbar slot to slot 3 of {_player}
             if {_player}'s held item is {@hammer}:
                 remove slowness from {_player}
                 apply slowness 2 to {_player} for 10 seconds
@@ -136,8 +137,10 @@ command gamestart <text = ffa>:
                     if loop-player's held item is {@robohand}:
                         set {%loop-player's uuid%::RHCooldown} to now
                     if loop-player's held item is {@hammer}:
-                        remove slowness from loop-player
-                        apply slowness 2 to loop-player for 10 seconds
+                        while loop-player's held item is {@hammer}:
+                            remove slowness from loop-player
+                            apply slowness 2 to loop-player for 10 seconds
+                            wait 5 seconds
         else:
             send "&cError: %arg-1%&c is not a valid gamemode!"
 
@@ -182,21 +185,21 @@ on damage:
             if {%attacker's uuid%::PvP} is false:
                 cancel the event
             if the attacker's held item is {@firestaff}:
-                set the victim on fire for 5 seconds
-                damage the victim by 1 heart
+                set the victim on fire for 4 seconds
+                damage the victim by 1.5 hearts
             if the attacker's held item is {@hammer}:
                 push the victim the horizontal facing of the attacker at speed 3
             if the attacker's held item is {@robohand}:
                 cancel the event
-                if the distance between the attacker and the victim is less than 2:
-                    damage the victim by 1.5 hearts
+                if the distance between the attacker and the victim is less than 3:
+                    damage the victim by 2.5 hearts
             if {%attacker's uuid%::PvP} is true:
                 set {%victim's uuid%::LastHit} to the attacker
     if the damage cause is the void:
+        FFA_tp(victim)
         if {%victim's uuid%::PvP} is true:
             if {%victim's uuid%::LastHit} is set:
                 FFA_AddKill({%victim's uuid%::LastHit})
-        FFA_tp(victim)
         stop
     else:
         if {%victim's uuid%::PvP} is false:
@@ -216,8 +219,9 @@ on right click:
             set {%{_u}%::FSCooldown} to now
             if the targeted entity exists:
                 set the targeted entity on fire for 5 seconds
+                damage the targeted entity by 2 hearts
             else:
-                send formatted "{@m4}Whoops, you missed!"
+                send formatted "{@m4}Whoops, you missed!" to the player
         else:
             set {_m} to "{@cooldown}"
             replace "<prefix>" in {_m} with "{@prefix}"
@@ -226,7 +230,7 @@ on right click:
             replace "<m3>" in {_m} with "{@m3}"
             replace "<m4>" in {_m} with "{@m4}"
             replace "<time>" in {_m} with "%15 - {_c}%"
-            send formatted {_m}
+            send formatted {_m} to the player
     if the player's held item is {@robohand}:
         cancel the event
         set {_u} to player's uuid
@@ -247,7 +251,7 @@ on right click:
             replace "<m3>" in {_m} with "{@m3}"
             replace "<m4>" in {_m} with "{@m4}"
             replace "<time>" in {_m} with "%20 - {_c}%"
-            send formatted {_m}
+            send formatted {_m} to the player
     else:
         stop
         
@@ -283,6 +287,7 @@ on player's held item change:
     player is holding {@glass2}
     if {%player's uuid%::Game} is "ffa":
         set player's selected hotbar slot to slot 4 of player
+        wait 1 tick
         if the player's held item is {@hammer}:
             while the player's held item is {@hammer}:
                 remove slowness from the player
