@@ -226,6 +226,7 @@ on right click:
             replace "<time>" in {_m} with "%15 - {_c}%"
             send formatted {_m}
     if the player's held item is {@robohand}:
+	cancel the event
         set {_u} to player's uuid
         set {_t} to time since {%{_u}%::RHCooldown}
         set {_c::*} to split "%{_t}%" at " "
