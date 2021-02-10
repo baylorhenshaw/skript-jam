@@ -1,0 +1,301 @@
+options:
+    
+    #Chat colours
+    
+    m1: &9
+    m2: &8
+    m3: &b
+    m4: &3
+
+    #Text/Message
+    prefix : <m1>MeleeNMagic<m2>»
+    time : <prefix> <m3><time> <m4>seconds until the game starts!
+    win : <prefix> <m3><player> <m4>has won the game!
+    kill : <prefix> <m3><player> <m4>is on <m3><kills> <m4>kills!
+    selected : <m4>You have selected <m3><weapon><m4>!
+    cooldown : <prefix> <m4>You must wait <m3><time> <m4>seconds to use that!
+    menuname :&3&l     Select your weapon!
+    
+    #Worlds
+    arena : FFAarena
+    
+    #Menu/Glass Types
+    glass1 : black stained glass pane named " "
+    glass2 : gray stained glass pane named " "
+    glass3 : light gray stained glass pane named " "
+    
+    #Items
+    FFASelect : a nether star named "{@3}Select a weapon"
+    hammer : unbreakable gold sword named "&e&l&oLe Bonk" with custom model data 1 with lore "&3Big and and slows you down," and "&3but flings the opposition"
+    firestaff : a stick named "&6&l&oLe Fire" with custom model data 11 with lore "&3Left Click to set the enemy on fire" and "&4Right Click to shoot a fire spell (15s)"
+    robohand : an iron block named "&8&l&oLe Punch" with custom model data 1 with lore "&3Small, but enchanced tech from" and "&32077 makes it pack a punch!" and "&4Right Click Ability (20s):" and "&4Speed 2, Jump Boost 1"
+
+
+#Functions
+
+function FFA_tp(player : player):
+    if {%{_u}%::LastHit} is set:
+        delete {%{_u}%::LastHit}
+    while {_b} isn't set:
+        set {_s} to a random integer between 1 and 10
+        if {GameSpawn::%{_s}%} is set:
+            teleport {_player} to {GameSpawn::%{_s}%}
+            set {_b} to true
+            wait 1 tick
+            set {_player}'s health to 10
+            if {_player} is on fire:
+                extinguish {_player}
+            wait 1 tick
+            if {_player}'s held item is {@hammer}:
+                remove slowness from {_player}
+                apply slowness 2 to {_player} for 10 seconds
+                
+            
+function FFA_selectmessage(player : player, weapon : text):
+    set {_m} to "{@selected}"
+    replace "<m3>" in {_m} with "{@m3}"
+    replace "<m4>" in {_m} with "{@m4}"
+    replace "<weapon>" in {_m} with {_weapon}
+    send formatted {_m} to {_player}
+    
+function FFA_AddKill(player : player):
+    set {_u} to {_player}'s uuid
+    if {%{_u}%::Kills} isn't set:
+        set {%{_u}%::Kills} to 0
+    add 1 to {%{_u}%::Kills}
+    set {_m} to "{@kill}"
+    replace "<prefix>" in {_m} with "{@prefix}"
+    replace "<m1>" in {_m} with "{@m1}"
+    replace "<m2>" in {_m} with "{@m2}"
+    replace "<m3>" in {_m} with "{@m3}"
+    replace "<m4>" in {_m} with "{@m4}"
+    replace "<player>" in {_m} with "%{_player}%"
+    replace "<kills>" in {_m} with "%{%{_u}%::Kills}%"
+    send formatted {_m} to all players
+    FFA_WinCheck({_player})
+
+
+function FFA_WinCheck(player : player):
+    set {_u} to {_player}'s uuid
+    if {%{_u}%::Kills} >= 10:
+        set {_m} to "{@win}"
+        replace "<prefix>" in {_m} with "{@prefix}"
+        replace "<m1>" in {_m} with "{@m1}"
+        replace "<m2>" in {_m} with "{@m2}"
+        replace "<m3>" in {_m} with "{@m3}"
+        replace "<m4>" in {_m} with "{@m4}"
+        replace "<player>" in {_m} with "%{_player}%"
+        loop all players:
+            send formatted {_m} to loop-player
+            set {%loop-player's uuid%::PvP} to false
+            clear loop-player's inventory
+            set loop-player's health to 10
+            remove slowness from loop-player
+            delete {%loop-player's uuid%::Game}
+            
+    
+
+#Commands
+
+command gamestart <text = ffa>:
+    permission: game.start
+    trigger:
+        if arg-1 is "ffa":
+            loop all players:
+                clear loop-player's inventory
+                set {%loop-player's uuid%::Game} to "ffa"
+                send "&6You are joining a game of &c%arg-1%&6!" to loop-player
+                set the loop-player's health to 10
+                set the loop-player's hunger to 10
+                set {%loop-player's uuid%::GameWeapon} to {@hammer}
+                set {%loop-player's uuid%::PvP} to false
+                set {%loop-player's uuid%::Kills} to 0
+                delete {%loop-player's uuid%::LastHit}
+                FFA_tp(loop-player)
+                open gui "FFASelect" to loop-player
+            loop 20 times:
+                wait 1 second
+                set {_t} to 20 - loop-number
+                if {_t} is 15, 10, 5, 4, 3, 2 or 1:
+                    set {_m} to "{@time}"
+                    replace "<prefix>" in {_m} with "{@prefix}"
+                    replace "<m1>" in {_m} with "{@m1}"
+                    replace "<m2>" in {_m} with "{@m2}"
+                    replace "<m3>" in {_m} with "{@m3}"
+                    replace "<m4>" in {_m} with "{@m4}"
+                    replace "<time>" in {_m} with "%{_t}%"
+                    send formatted {_m} to all players
+            loop all players:
+                if {%loop-player's uuid%::Game} is "ffa":
+                    set {%loop-player's uuid%::PvP} to true
+                    set slot (integers between 0 and 35) of loop-player's inventory to {@glass2}
+                    set slot 4 of loop-player's inventory to {%loop-player's uuid%::GameWeapon}
+                    set loop-player's selected hotbar slot to slot 4 of loop-player
+                    if loop-player's held item is {@firestaff}:
+                        set {%loop-player's uuid%::FSCooldown} to now
+                    if loop-player's held item is {@robohand}:
+                        set {%loop-player's uuid%::RHCooldown} to now
+                    if loop-player's held item is {@hammer}:
+                        remove slowness from loop-player
+                        apply slowness 2 to loop-player for 10 seconds
+        else:
+            send "&cError: %arg-1%&c is not a valid gamemode!"
+
+command gamespawn <number = 1>:
+    permission: game.spawnset
+    trigger:
+        if arg-1 <= 10:
+            set {GameSpawn::%arg-1%} to player's location
+            send "&6Spawn &c%arg-1% &6has been set to your location!"
+        else:
+            send "&cError: Invalid number!"
+            
+command gamekills:
+    trigger:
+        loop all players:
+            send "%loop-player%: %{%loop-player's uuid%::Kills}%"
+
+#Events
+
+on script load:
+    create a gui with id "FFASelect" with virtual chest inventory with 5 rows named "{@menuname}":
+        make gui slot (integers between 0 and 44) with {@glass1}
+        loop 3 times:
+            make gui slot (integers between (((loop-number - 1) * 9) + 10) and (((loop-number - 1) * 9) + 16)) with {@glass2}
+        make gui slot 21 with {@hammer}:
+            set {%player's uuid%::GameWeapon} to {@hammer}
+            FFA_selectmessage(player, "hammer")
+        make gui slot 22 with {@firestaff}:
+            set {%player's uuid%::GameWeapon} to {@firestaff}
+            FFA_selectmessage(player, "firestaff")
+        make gui slot 23 with {@robohand}:
+            set {%player's uuid%::GameWeapon} to {@robohand}
+            FFA_selectmessage(player, "robohand")
+
+on damage:
+    if the damage cause is fall:
+        cancel the event
+    if the attacker is a player:
+        if the victim is a player:
+            if {%attacker's uuid%::PvP} isn't set:
+                set {%attacker's uuid%::PvP} to false
+            if {%attacker's uuid%::PvP} is false:
+                cancel the event
+            if the attacker's held item is {@firestaff}:
+                set the victim on fire for 5 seconds
+                damage the victim by 1 heart
+            if the attacker's held item is {@hammer}:
+                push the victim the horizontal facing of the attacker at speed 3
+            if the attacker's held item is {@robohand}:
+                cancel the event
+                if the distance between the attacker and the victim is less than 2:
+                    damage the victim by 1.5 hearts
+            if {%attacker's uuid%::PvP} is true:
+                set {%victim's uuid%::LastHit} to the attacker
+    if the damage cause is the void:
+        if {%victim's uuid%::PvP} is true:
+            if {%victim's uuid%::LastHit} is set:
+                FFA_AddKill({%victim's uuid%::LastHit})
+        FFA_tp(victim)
+        stop
+    else:
+        if {%victim's uuid%::PvP} is false:
+            cancel the event
+
+on right click:
+    if the player's held item is {@firestaff}:
+        set {_u} to player's uuid
+        set {_t} to time since {%{_u}%::FSCooldown}
+        set {_c::*} to split "%{_t}%" at " "
+        loop {_c::*}:
+            if (loop-value parsed as number) is set:
+                set {_c} to loop-value parsed as num
+        if {_t} is more than 15 seconds:
+            set {%{_u}%::FSCooldown} to now
+            if the targeted entity exists:
+                set the targeted entity on fire for 5 seconds
+            else:
+                send formatted "{@m4}Whoops, you missed!"
+        else:
+            set {_m} to "{@cooldown}"
+            replace "<prefix>" in {_m} with "{@prefix}"
+            replace "<m1>" in {_m} with "{@m1}"
+            replace "<m2>" in {_m} with "{@m2}"
+            replace "<m3>" in {_m} with "{@m3}"
+            replace "<m4>" in {_m} with "{@m4}"
+            replace "<time>" in {_m} with "%15 - {_c}%"
+            send formatted {_m}
+    if the player's held item is {@robohand}:
+        set {_u} to player's uuid
+        set {_t} to time since {%{_u}%::RHCooldown}
+        set {_c::*} to split "%{_t}%" at " "
+        loop {_c::*}:
+            if (loop-value parsed as number) is set:
+                set {_c} to loop-value parsed as num
+        if {_t} is more than 20 seconds:
+            set {%{_u}%::RHCooldown} to now
+            apply speed 2 to the player for 5 seconds
+            apply jump boost 1 to the player for 5 seconds
+        else:
+            set {_m} to "{@cooldown}"
+            replace "<prefix>" in {_m} with "{@prefix}"
+            replace "<m1>" in {_m} with "{@m1}"
+            replace "<m2>" in {_m} with "{@m2}"
+            replace "<m3>" in {_m} with "{@m3}"
+            replace "<m4>" in {_m} with "{@m4}"
+            replace "<time>" in {_m} with "%20 - {_c}%"
+            send formatted {_m}
+    else:
+        stop
+        
+
+on block damage:
+    if the player's world is "{@arena}":
+        if the player doesn't have permission "game.break":
+            cancel the event
+        else:
+            stop
+            
+
+on inventory click:
+    if event-slot is {@glass2}:
+        cancel the event
+    if event-slot is {%player's uuid%::GameWeapon}:
+        cancel the event
+
+on food bar change:
+    if {%player's uuid%::Game} is "ffa":
+        cancel the event
+        
+on drop:
+    if {%player's uuid%::Game} is "ffa":
+        cancel the event
+        
+on swap hand items:
+    if {%player's uuid%::Game} is "ffa":
+        cancel the event
+
+on player's held item change:
+    wait 1 tick
+    player is holding {@glass2}
+    if {%player's uuid%::Game} is "ffa":
+        set player's selected hotbar slot to slot 4 of player
+        if the player's held item is {@hammer}:
+            while the player's held item is {@hammer}:
+                remove slowness from the player
+                apply slowness 2 to the player for 10 seconds
+                wait 5 seconds
+        if player's held item is {@firestaff}:
+            if {%player's uuid%::FSCooldown} isn't set:
+                set {%player's uuid%::FSCooldown} to now
+
+on death:
+    the victim is a player
+    cancel the event
+    set player's health to 10
+    wait 1 tick
+    if {%victim's uuid%::Game} is "ffa":
+        if {%victim's uuid%::PvP} is true:
+            set {_p} to {%victim's uuid%::LastHit}
+            FFA_AddKill({_p})
+        FFA_tp(victim)
