@@ -127,20 +127,17 @@ command gamestart <text = ffa>:
                     replace "<time>" in {_m} with "%{_t}%"
                     send formatted {_m} to all players
             loop all players:
-                if {%loop-player's uuid%::Game} is "ffa":
-                    set {%loop-player's uuid%::PvP} to true
-                    set slot (integers between 0 and 35) of loop-player's inventory to {@glass2}
-                    set slot 4 of loop-player's inventory to {%loop-player's uuid%::GameWeapon}
-                    set loop-player's selected hotbar slot to slot 4 of loop-player
-                    if loop-player's held item is {@firestaff}:
-                        set {%loop-player's uuid%::FSCooldown} to now
-                    if loop-player's held item is {@robohand}:
-                        set {%loop-player's uuid%::RHCooldown} to now
-                    if loop-player's held item is {@hammer}:
-                        while loop-player's held item is {@hammer}:
-                            remove slowness from loop-player
-                            apply slowness 2 to loop-player for 10 seconds
-                            wait 5 seconds
+                set {%loop-player's uuid%::PvP} to true
+                set slot (integers between 0 and 35) of loop-player's inventory to {@glass2}
+                set slot 4 of loop-player's inventory to {%loop-player's uuid%::GameWeapon}
+                set loop-player's selected hotbar slot to slot 4 of loop-player
+                if loop-player's held item is {@firestaff}:
+                    set {%loop-player's uuid%::FSCooldown} to now
+                if loop-player's held item is {@robohand}:
+                    set {%loop-player's uuid%::RHCooldown} to now
+                if loop-player's held item is {@hammer}:
+                    remove slowness from loop-player
+                    apply slowness 2 to loop-player for 10 seconds
         else:
             send "&cError: %arg-1%&c is not a valid gamemode!"
 
@@ -161,6 +158,10 @@ command gamekills:
 #Events
 
 on script load:
+    loop all offline players:
+        if {%loop-offlineplayer's uuid%::Game} is "ffa":
+            clear loop-offlineplayer's inventory
+
     create a gui with id "FFASelect" with virtual chest inventory with 5 rows named "{@menuname}":
         make gui slot (integers between 0 and 44) with {@glass1}
         loop 3 times:
@@ -258,10 +259,9 @@ on right click:
 
 on block damage:
     if the player's world is "{@arena}":
-        if the player doesn't have permission "game.break":
-            cancel the event
-        else:
-            stop
+        cancel the event
+    else:
+        stop
             
 
 on inventory click:
